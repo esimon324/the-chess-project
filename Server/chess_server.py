@@ -17,6 +17,8 @@ def legal_moves():
 		for m in moves:
 			l.append(m.uci())
 		d = dict(enumerate(l))
+		d['kingside'] = game.has_kingside_castling_rights(game.turn)
+		d['queenside'] = game.has_queenside_castling_rights(game.turn)
 		d['len'] = len(l)
 		return jsonify(d)
 	else:	

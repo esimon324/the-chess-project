@@ -1,19 +1,25 @@
+/*TODO
+ * - change make move to a GET http call and return object of special moves
+ *		{wksc:boolean,wqsc:boolean,bksc:boolean,bqsc:boolean,enPassant:String{('None' or '*en passant square*')}
+ * - implement en passant functionality
+ *		- make notation work
+ * - implement end of game detection: no legal moves, x3 repeated position, no legal moves, checkmate
+ * - create new game without having to refresh the page
+ * - add AI to play against
+ */ 
 var chessApp = angular.module('chessApp', []).controller('chessAppController', 
-	function($scope,$http) {
+	function($scope,$http,$timeout,$compile) {
 		/*Scope Variables*/
 		$scope.moves = new Array();
-		$scope.isWhiteTurn;
+		$scope.isWhiteTurn = true;
 		$scope.legalMoves
 		$scope.rootURL = 'http://127.0.0.1:5000/'
+		$scope.promotionMove;
+		$scope.fileMap = {'a':1,'b':2,'c':3,'d':4,'e':5,'f':6,'g':7,'h':8,1:'a',2:'b',3:'c',4:'d',5:'e',6:'f',7:'g',8:'h'};
+		$scope.calculatingMove;
 		/*Scope Variables*/
 		
 		/*Scope Functions*/
-		$scope.init = function()
-		{
-			$scope.newGame();
-			$scope.setTurn('white');
-		};
-		
 		$scope.setTurn = function(color)
 		{
 			if(color=='white')
@@ -29,7 +35,7 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 				$scope.isWhiteTurn = false;
 			}
 		};
-		
+	
 		$scope.switchTurn = function()
 		{
 			if($scope.isWhiteTurn)
@@ -40,37 +46,52 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 		
 		$scope.undo = function()
 		{
-			var url = $scope.rootURL + 'undo';
-			$http({
-				method: 'POST',
-				url: url
-			}).then(function successCallback(response)
+			if($scope.moves.length > 0)
 			{
-				if($scope.moves.length > 0)
+				var url = $scope.rootURL + 'undo';
+				$http({
+					method: 'POST',
+					url: url
+				}).then(function successCallback(response)
 				{
+					$scope.switchTurn();
 					var lastMove = $scope.moves.pop();
-					console.log(lastMove)
 					if(lastMove.wksc)
 						$scope.undoWhiteKingsideCastle();
 					else if(lastMove.wqsc)
 						$scope.undoWhiteQueensideCastle();
+					else if(lastMove.bksc)
+						$scope.undoBlackKingsideCastle();
+					else if(lastMove.bqsc)
+						$scope.undoBlackQueensideCastle();
+					else if(lastMove.ep)
+					{
+						lastMove.epCaptureSquare.appendChild(lastMove.captured);
+						$scope.movePiece(lastMove.moved,document.getElementById(lastMove.from));
+					}
+					else if($scope.isPromotion(lastMove.moved,lastMove.from,lastMove.to))
+					{
+						$scope.movePiece(lastMove.moved,document.getElementById(lastMove.from));
+						if(lastMove.captured != null)
+							document.getElementById(lastMove.to).appendChild(lastMove.captured);
+						if($scope.isWhiteTurn)
+							$scope.changePiece(lastMove.moved,'P');
+						else
+							$scope.changePiece(lastMove.moved,'p');
+					}
 					else
 					{
 						document.getElementById(lastMove.from).appendChild(lastMove.moved);
 						if(lastMove.captured != null)
 							document.getElementById(lastMove.to).appendChild(lastMove.captured);
 					}
-					if($scope.isWhiteTurn)
-						$scope.setTurn('black');
-					else
-						$scope.setTurn('white');
-				}
-				$scope.getLegalMoves();
-			}, function errorCallback(response) 
-			{
-				console.log('ERROR');
-				console.log(response);
-			});
+					$scope.getLegalMoves();
+				}, function errorCallback(response) 
+				{
+					console.log('ERROR - from $scope.undo()');
+					console.log(response);
+				});
+			}
 		};
 		
 		$scope.isEven = function(n)
@@ -85,22 +106,24 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 		
 		$scope.toLetter = function(n)
 		{
-			if(n == 1)
-				return 'a';
-			else if(n == 2)
-				return 'b';
-			else if(n == 3)
-				return 'c';
-			else if(n == 4)
-				return 'd';
-			else if(n == 5)
-				return 'e';
-			else if(n == 6)
-				return 'f';
-			else if(n == 7)
-				return 'g';
-			else
-				return 'h';
+			return $scope.fileMap[n];
+		};
+		
+		$scope.uciToNumber = function(uci)
+		{
+			var file = uci.charAt(0);
+			var rank = uci.charAt(1);
+			file = $scope.fileMap[file];
+			rank = parseInt(rank);
+			return ((8*(rank-1))+(file-1));
+		};
+		
+		$scope.numberToUci = function(n)
+		{
+			var rank = Math.ceil((n+1) / 8);
+			var file = (n % 8)+1;
+			file = $scope.fileMap[file]
+			return file.toString() + rank.toString();
 		};
 
 		//takes the piece and the square and forms the correct chess notation for the move
@@ -140,6 +163,31 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 			else
 				return "";
 		};
+		
+		$scope.calculateMove = function()
+		{
+			$scope.calculatingMove = true;
+			var url = $scope.rootURL + 'calculate_move/4';
+			$http({
+				method: 'GET',
+				url: url
+			}).then(function successCallback(response) 
+			{
+				$scope.calculatingMove = false;
+				console.log(response.data);
+				var from = response.data.substring(0,2);
+				var to = response.data.substring(2,4);
+				var piece = document.getElementById(from).children[0];
+				$scope.movePiece(piece,document.getElementById(to));
+				$scope.switchTurn();
+				$scope.getLegalMoves();
+				return response.data;
+			}, function errorCallback(response)
+			{
+				console.log('ERROR - $scope.handleDrop()');
+				console.log(response);
+			});
+		};
 
 		$scope.handleDrop = function(ev,square)
 		{
@@ -148,42 +196,243 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 		    var to = square.id;
 		    var from = piece.parentElement.id;
 			var uci = from + to;
+			if($scope.isPromotion(piece,from,to))
+			{
+				var notation = $scope.toNotation(piece,to,from,captured);
+				$scope.promotionMove = {
+							notation:notation, 
+							moved:piece, 
+							captured:captured, 
+							to:to, 
+							from:from, 
+						};
+				$scope.showPromotionModal();
+			}
 		    if($scope.isLegalMove(uci))
 		    {
 				var url = $scope.rootURL + 'move/' + uci
 				$http({
-					method: 'POST',
+					method: 'GET',
 					url: url
 				}).then(function successCallback(response) 
-				{						
-					/*handle castling*/
-					if($scope.legalMoves.kingside && uci == 'e1g1')
-						$scope.makeWhiteKingsideCastle();
-					else if($scope.legalMoves.queenside && uci == 'e1c1')
-						$scope.makeWhiteQueensideCastle();
-					else if($scope.legalMoves.kingside && uci == 'e8g8')
-						console.log('BLACK KINGSIDE CASTLE YALL');
-					else if($scope.legalMoves.queenside && uci == 'e8c8')
-						console.log('BLACK QUEENSIDE CASTLE YALL');
-					else
-						$scope.makeMove(square,piece,captured,from,to,false,false);
-				}, function errorCallback(response) 
 				{
-					console.log('ERROR');
+					if(response.data.kingside)
+					{
+						if($scope.isWhiteTurn)
+							$scope.makeWhiteKingsideCastle();
+						else
+							$scope.makeBlackKingsideCastle();
+					}
+					else if(response.data.queenside)
+					{
+						if($scope.isWhiteTurn)
+							$scope.makeWhiteQueensideCastle();
+						else
+							$scope.makeBlackQueensideCastle();
+					}
+					else if(response.data.ep)
+					{
+						$scope.makeEnPassant(square,piece,captured,from,to,response.data.epSquare);
+					}
+					else
+					{
+						$scope.makeStandardMove(square,piece,captured,from,to);
+					}
+					
+					if(response.data.checkmate)
+					{
+						alert('checkmate');
+					}
+					else if(response.data.stalemate)
+					{
+						alert('stalemate');
+					}
+					else if(response.data.threefoldRepitition)
+					{
+						alert('draw threefold repitition');
+					}
+					else if(response.data.insufficientMaterial)
+					{
+						alert('insufficient material');
+					}
+				}, function errorCallback(response)
+				{
+					console.log('ERROR - $scope.handleDrop()');
 					console.log(response);
 				});
 			}
 		};
 		
+		$scope.makeEnPassant = function(square,moved,captured,from,to,epSquare)
+		{
+			//determine square of captured pawn
+			var epCaptureSquare;
+			if($scope.isWhiteTurn)
+			{
+				epCaptureSquare = document.getElementById($scope.numberToUci(epSquare-8));
+			}
+			else
+			{
+				epCaptureSquare = document.getElementById($scope.numberToUci(epSquare+8));
+			}
+			
+			//make the piece moves
+			$scope.movePiece(moved,document.getElementById(to));
+			
+			//set captured and remove piece from square
+			captured = epCaptureSquare.children[0];
+			epCaptureSquare.removeChild(captured);
+			
+			var notation = $scope.toNotation(moved,to,from,captured);
+			notation = notation+'e.p.';
+			//push move
+			var move = {
+							notation:notation, 
+							moved:moved, 
+							captured:captured, 
+							to:to, 
+							from:from,
+							ep:true,
+							epCaptureSquare:epCaptureSquare
+						};
+			$scope.moves.push(move);
+			
+			//switch turn
+			$scope.switchTurn();
+			
+			//get new legal moves
+			$scope.getLegalMoves();
+		};
+				
+		$scope.isPromotion = function(piece,from,to)
+		{
+			var pieceType = $('#'+piece.id).attr('piece-type');
+			if(pieceType=='pawn')
+			{
+				if(from.charAt(1) == '7')
+				{
+					if(to.charAt(1) == '8')
+					{
+						return true;
+					}	
+				}
+				if(from.charAt(1) == '2')
+				{
+					if(to.charAt(1) == '1')
+					{
+						return true;
+					}
+				}	
+			}
+			return false;
+		};
+		
+		$scope.makePromotion = function(promoteType)
+		{
+			var move = $scope.promotionMove;
+			move.notation = move.notation + "=" + promoteType.toUpperCase();
+			var uci = move.from + move.to + promoteType;
+			var url = $scope.rootURL + 'move/' + uci;
+			$http({
+				method: 'GET',
+				url: url
+			}).then(function successCallback(response) 
+			{	
+				$scope.movePiece(move.moved,document.getElementById(move.to));
+				$scope.moves.push(move);
+				if($scope.isWhiteTurn)
+					$scope.changePiece(move.moved,promoteType.toUpperCase());
+				else
+					$scope.changePiece(move.moved,promoteType);
+				$scope.switchTurn();
+				$scope.getLegalMoves();
+				$scope.hidePromotionModal();
+			}, function errorCallback(response)
+			{
+				console.log('ERROR - from $scope.makePromotion()');
+				console.log(response);
+			});
+		};
+		
+		$scope.changePiece = function(piece,typeStr)
+		{
+			var path = piece.src;
+			var rm = ''; 
+			var add = '';
+			if(typeStr=='P')
+			{
+				path = 'images/white_pawn.png';
+				rm = 'piece';
+				add = 'pawn';
+			}
+			if(typeStr=='N')
+			{	
+				path = 'images/white_knight.png';
+				rm = 'pawn';
+				add = 'piece';
+			}
+			if(typeStr=='B')
+			{
+				path = 'images/white_bishop.png';
+				rm = 'pawn';
+				add = 'piece';
+			}
+			if(typeStr=='R')
+			{
+				path = 'images/white_rook.png';
+				rm = 'pawn';
+				add = 'piece';
+			}
+			if(typeStr=='Q')
+			{
+				path = 'images/white_queen.png';
+				rm = 'pawn';
+				add = 'piece';
+			}
+			if(typeStr=='p')
+			{
+				path = 'images/black_pawn.png';
+				rm = 'piece';
+				add = 'pawn';
+			}
+			if(typeStr=='n')
+			{
+				path = 'images/black_knight.png';
+				rm = 'pawn';
+				add = 'piece';
+			}
+			if(typeStr=='b')
+			{
+				path = 'images/black_bishop.png';
+				rm = 'pawn';
+				add = 'piece';
+			}
+			if(typeStr=='r')
+			{
+				path = 'images/black_rook.png';
+				rm = 'pawn';
+				add = 'piece';
+			}
+			if(typeStr=='q')
+			{
+				path = 'images/black_queen.png';
+				rm = 'pawn';
+				add = 'piece';
+			}
+			piece.src = path;
+			piece.classList.remove(rm);
+			piece.classList.add(add);
+		};
+		
 		//handles all functionality for making a standard move
-		$scope.makeMove = function(square,moved,captured,from,to,wksc,wqsc)
+		$scope.makeStandardMove = function(square,moved,captured,from,to,wksc,wqsc,bksc,bqsc)
 		{
 			//move the pieces
 			$scope.movePiece(moved,square);
 			
 			//push move onto the stack
 			var notation = $scope.toNotation(moved,to,from,captured);
-			$scope.pushMove(moved,captured,from,to,notation,wksc,wqsc);
+			$scope.pushMove(notation,moved,captured,to,from);
 			
 			//change the turn
 			$scope.switchTurn();
@@ -201,13 +450,20 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 			to.appendChild(piece);
 		};
 		
-		$scope.pushMove = function(moved,captured,from,to,notation,wksc,wqsc)
+		//TODO: refactor to only handle standard moves
+		$scope.pushMove = function(notation,moved,captured,to,from)
 		{
-			var move = {notation:notation, moved:moved, captured:captured, to:to, from:from, wksc:wksc, wqsc:wqsc};
+			var move = {
+							notation:notation, 
+							moved:moved, 
+							captured:captured, 
+							to:to, 
+							from:from
+						};
 			$scope.moves.push(move);
 		};
 				
-		$scope.makeWhiteKingsideCastle = function(moved,captured,to,from)
+		$scope.makeWhiteKingsideCastle = function()
 		{
 			//move king
 			var king = document.getElementById('king-e1');
@@ -220,7 +476,7 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 			$scope.movePiece(rook,rookTo);
 			
 			//pushing move to stack
-			$scope.pushMove(king,null,'e1','g1','0-0',true);
+			$scope.pushWhiteKingsideCastle();
 			
 			//change the turn
 			$scope.switchTurn();
@@ -228,6 +484,19 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 			//update new set of legal moves
 			$scope.getLegalMoves();
 		};
+			$scope.pushWhiteKingsideCastle = function()
+			{
+				var moved = document.getElementById('king-e1');
+				var move = {
+								notation:'0-0', 
+								moved:moved, 
+								captured:undefined, 
+								to:'g1', 
+								from:'e1',
+								wksc:true
+							};
+				$scope.moves.push(move);
+			};
 		
 		$scope.undoWhiteKingsideCastle = function()
 		{
@@ -255,7 +524,7 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 			$scope.movePiece(rook,rookTo);
 			
 			//pushing move to stack
-			$scope.pushMove(king,null,'e1','c1','0-0-0',false,true);
+			$scope.pushWhiteQueensideCastle();
 			
 			//change the turn
 			$scope.switchTurn();
@@ -263,6 +532,19 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 			//update new set of legal moves
 			$scope.getLegalMoves();
 		};
+			$scope.pushWhiteQueensideCastle = function()
+			{
+				var moved = document.getElementById('king-e1');
+				var move = {
+								notation:'0-0-0', 
+								moved:moved, 
+								captured:undefined, 
+								to:'g1', 
+								from:'c1',
+								wqsc:true
+							};
+				$scope.moves.push(move);
+			};
 		
 		$scope.undoWhiteQueensideCastle = function()
 		{
@@ -277,6 +559,102 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 			$scope.movePiece(rook,rookTo);
 		};
 		
+		$scope.makeBlackKingsideCastle = function()
+		{
+			//move king
+			var king = document.getElementById('king-e8');
+			var kingTo = document.getElementById('g8');
+			$scope.movePiece(king,kingTo);
+			
+			//move rook
+			var rook = document.getElementById('rook-h8');
+			var rookTo = document.getElementById('f8');
+			$scope.movePiece(rook,rookTo);
+			
+			//pushing move to stack
+			$scope.pushBlackKingsideCastle();
+			
+			//change the turn
+			$scope.switchTurn();
+			
+			//update new set of legal moves
+			$scope.getLegalMoves();
+		};
+			$scope.pushBlackKingsideCastle = function()
+			{
+				var moved = document.getElementById('king-e8');
+				var move = {
+								notation:'0-0', 
+								moved:moved, 
+								captured:undefined, 
+								to:'g8', 
+								from:'e8',
+								bksc:true
+							};
+				$scope.moves.push(move);
+			};
+		
+		$scope.undoBlackKingsideCastle = function()
+		{
+			//move king back
+			var king = document.getElementById('king-e8');
+			var kingTo = document.getElementById('e8');
+			$scope.movePiece(king,kingTo);
+			
+			//move rook back
+			var rook = document.getElementById('rook-h8');
+			var rookTo = document.getElementById('h8');
+			$scope.movePiece(rook,rookTo);
+		};
+		
+		$scope.makeBlackQueensideCastle = function()
+		{
+			//move king
+			var king = document.getElementById('king-e8');
+			var kingTo = document.getElementById('c8');
+			$scope.movePiece(king,kingTo);
+			
+			//move rook
+			var rook = document.getElementById('rook-a8');
+			var rookTo = document.getElementById('d8');
+			$scope.movePiece(rook,rookTo);
+			
+			//pushing move to stack
+			$scope.pushBlackQueensideCastle();
+			
+			//change the turn
+			$scope.switchTurn();
+			
+			//update new set of legal moves
+			$scope.getLegalMoves();
+		};
+			$scope.pushBlackQueensideCastle = function()
+			{
+				var moved = document.getElementById('king-e8');
+				var move = {
+								notation:'0-0-0', 
+								moved:moved, 
+								captured:undefined, 
+								to:'g8', 
+								from:'c8',
+								bqsc:true
+							};
+				$scope.moves.push(move);
+			};
+		
+		$scope.undoBlackQueensideCastle = function()
+		{
+			//move king back
+			var king = document.getElementById('king-e8');
+			var kingTo = document.getElementById('e8');
+			$scope.movePiece(king,kingTo);
+			
+			//move rook back
+			var rook = document.getElementById('rook-a8');
+			var rookTo = document.getElementById('a8');
+			$scope.movePiece(rook,rookTo);
+		};
+		
 		$scope.getLegalMoves = function()
 		{
 			var url = 'http://127.0.0.1:5000/legal_moves';
@@ -286,7 +664,7 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 			}).then(function successCallback(response) {
 				$scope.legalMoves = response.data;
 			  }, function errorCallback(response) {
-				console.log('ERROR');
+				console.log('ERROR - from $scope.getLegalMoves()');
 				console.log(response);
 			  });
 		};
@@ -309,23 +687,80 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 				url: url
 			}).then(function successCallback(response)
 			{
-				console.log('New game created');
+				$scope.resetBoard();
+				$scope.setTurn('white');
 				$scope.getLegalMoves();
 			}, function errorCallback(response) 
 			{
-				console.log('ERROR');
+				console.log('ERROR - from $scope.newGame()');
 				console.log(response);
 			});
 		};
 		
+		$scope.init = function()
+		{
+			var url = $scope.rootURL + 'init'
+			$http({
+				method: 'POST',
+				url: url
+			}).then(function successCallback(response)
+			{
+				$scope.calculatingMove = false;
+				$scope.getLegalMoves();
+			}, function errorCallback(response) 
+			{
+				console.log('ERROR - from $scope.newGame()');
+				console.log(response);
+			});
+		};
+		
+		$scope.showPromotionModal = function()
+		{
+			$('#promotionModal').modal('show');
+		};
+		
+		$scope.hidePromotionModal = function()
+		{
+			$('#promotionModal').modal('hide');
+		};
+		
+		$scope.resetBoard = function()
+		{
+			while($scope.moves.length > 0)
+			{
+				var lastMove = $scope.moves.pop();
+				document.getElementById(lastMove.from).appendChild(lastMove.moved);
+				if(lastMove.captured != null)
+					document.getElementById(lastMove.to).appendChild(lastMove.captured);
+			}
+		};
+		
+		$scope.showTurn = function()
+		{
+			if($scope.isWhiteTurn)
+				return "White's Turn";
+			else
+				return "Black's Turn";
+		};
+		
 		/*Scope Functions*/
+		
+		/*Watch Functions*/
+		$scope.$watch(function($scope) { return $scope.isWhiteTurn },
+			function(newValue, oldValue)
+			{
+				console.log(newValue);
+				if(!newValue)
+					$scope.calculateMove();
+			}
+		);
+		/*Watch Functions*/
 		
 		$scope.init()
 	}
 ).directive('moveable', 
 	function($document){
   		return function(scope, element, attr){
-	    	var startX = 0, startY = 0, x = 0, y = 0;
 	    	element.css({
 			    position: 'relative',
 			   	cursor: 'pointer',

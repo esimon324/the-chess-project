@@ -1,9 +1,20 @@
 .square{display:block; float:right; height:4em; width:4em;}
 	.square span{margin-left:45%;}
-.board{margin-left:25%; float:left;}
+.board{margin-left:25%; float:left; border:onset brown 5px solid;}
 .dark{background-color:#522F2F;}
 .light{background-color:#D2B48C;}
 .white_queen{content:url('images/white_queen.png');}
 .piece{position:relative; top:10%; left:12%; height:80%; width:75%;}
 .pawn{position:relative; top:10%; left:20%; height:80%; width:60%;}
 .rank-number{display:block; float:left; margin-top:4%; margin-right:5px;}
+
+.loading{
+	content:url('images/loading.gif');
+	position: absolute;
+	left: 41%;
+	top: 25%;
+	z-index:1;
+}
+
+.board_container{
+}
