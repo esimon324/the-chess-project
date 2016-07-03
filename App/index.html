@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+		<!-- Latest compiled and minified JavaScript -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+		<script src="chess_app.js"></script>
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+	</head>
+	<body ng-app="chessApp">
+		<div id="main" ng-controller="chessAppController">
+			<h1>Chess</h1>
+			<div class="col-md-offset-2 col-md-8 col-xs-12">
+				<div class="board" style="height:400px;">
+					<button ng-click="undo()">Undo</button>
+					<div ng-repeat="i in [8,7,6,5,4,3,2,1]" style="border:2px solid red; position:relative; display:table-row;">
+						<span class="rank-number">{{i}}</span>
+						<div ng-repeat="j in [8,7,6,5,4,3,2,1]" ng-class="{'dark':isEven(i+j), 'light':!isEven(j+i), 'endl':isLastCol(j)}" 
+							class="square" id="{{toLetter(j)+i}}" droppable>
+							<img ng-if="i==2" id="{{'pawn-'+toLetter(j)+i}}" color="white" class="pawn" src="images/white_pawn.png" moveable/>
+							<img ng-if="i==7" id="{{'pawn-'+toLetter(j)+i}}" color="black" class="pawn" src="images/black_pawn.png" draggable="false" moveable/>
+							<img ng-if="i==1&&(j==3 || j==6)" id="{{'bishop-'+toLetter(j)+i}}" color="white" class="piece" src="images/white_bishop.png" moveable/>
+							<img ng-if="i==8&&(j==3 || j==6)" id="{{'bishop-'+toLetter(j)+i}}" color="black" class="piece" src="images/black_bishop.png" draggable="false" moveable/>
+							<img ng-if="i==1&&(j==2 || j==7)" id="{{'knight-'+toLetter(j)+i}}" color="white" class="piece" src="images/white_knight.png" moveable/>
+							<img ng-if="i==8&&(j==2 || j==7)" id="{{'knight-'+toLetter(j)+i}}" color="black" class="piece" src="images/black_knight.png" draggable="false" moveable/>
+							<img ng-if="i==1&&(j==1 || j==8)" id="{{'rook-'+toLetter(j)+i}}" color="white" class="piece" src="images/white_rook.png" moveable/>
+							<img ng-if="i==8&&(j==1 || j==8)" id="{{'rook-'+toLetter(j)+i}}" color="black" class="piece" src="images/black_rook.png" draggable="false" moveable/>
+							<img ng-if="i==1&&j==4" id="{{'queen-'+toLetter(j)+i}}" color="white" class="piece" src="images/white_queen.png" moveable/>
+							<img ng-if="i==8&&j==4" id="{{'queen-'+toLetter(j)+i}}" color="black" class="piece" src="images/black_queen.png" draggable="false" moveable/>
+							<img ng-if="i==1&&j==5" id="{{'king-'+toLetter(j)+i}}" color="white" class="piece" src="images/white_king.png" moveable/>
+							<img ng-if="i==8&&j==5" id="{{'king-'+toLetter(j)+i}}" color="black" class="piece" src="images/black_king.png" draggable="false" moveable/>
+						</div>
+					</div>
+					<div>
+						<div class="square"><span>h</span></div>
+						<div class="square"><span>g</span></div>
+						<div class="square"><span>f</span></div>
+						<div class="square"><span>e</span></div>
+						<div class="square"><span>d</span></div>
+						<div class="square"><span>c</span></div>
+						<div class="square"><span>b</span></div>
+						<div class="square"><span>a</span></div>
+					</div>
+				</div>
+				<table>
+					<tr ng-repeat="move in moves track by $index">
+						<td style="width:1%; padding-left:5px;">
+							{{displayTurn($index)}} 
+						</td>
+						<td>
+							{{move.notation}}
+						</td>
+					</tr>
+				</table>
+			</div>
+			<ol>
+				<li ng-repeat="m in legalMoves track by $index">{{m}}</li>
+			</ol>
+		</div>
+	</body>
+</html>
