@@ -1,0 +1,103 @@
+Testing minimax implementations with depth 1
+minimax with stack
+(Move.from_uci('e2e3'), 0.17499999999999805)
+Time Elapsed: 0.0160000324249
+minimax with stack representation and sorted children
+(Move.from_uci('e2e3'), 0.17499999999999805)
+Time Elapsed: 0.0160000324249
+alphabeta with stack representation
+(Move.from_uci('e2e3'), 0.17499999999999805)
+Time Elapsed: 0.0
+alphabeta with stack representation and sorted children
+(Move.from_uci('e2e3'), 0.17499999999999805)
+Time Elapsed: 0.0150001049042
+minimax with moves list representation
+(Move.from_uci('e2e3'), 0.17499999999999805)
+Time Elapsed: 0.0
+minimax with moves list representation and sorted children
+(Move.from_uci('e2e3'), 0.17499999999999805)
+Time Elapsed: 0.0310001373291
+alphabeta with moves list representation
+(Move.from_uci('e2e3'), 0.17499999999999805)
+Time Elapsed: 0.0160000324249
+alphabeta with moves list representation and sorted children
+(Move.from_uci('e2e3'), 0.17499999999999805)
+Time Elapsed: 0.0149998664856
+
+Testing minimax implementations with depth 2
+minimax with stack
+(Move.from_uci('e2e3'), -1.7763568394002505e-15)
+Time Elapsed: 0.15700006485
+minimax with stack representation and sorted children
+(Move.from_uci('e2e3'), -1.7763568394002505e-15)
+Time Elapsed: 0.280999898911
+alphabeta with stack representation
+(Move.from_uci('e2e3'), -1.7763568394002505e-15)
+Time Elapsed: 0.0620000362396
+alphabeta with stack representation and sorted children
+(Move.from_uci('e2e3'), -1.7763568394002505e-15)
+Time Elapsed: 0.172000169754
+minimax with moves list representation
+(Move.from_uci('e2e3'), -1.7763568394002505e-15)
+Time Elapsed: 0.25
+minimax with moves list representation and sorted children
+(Move.from_uci('e2e3'), -1.7763568394002505e-15)
+Time Elapsed: 0.328999996185
+alphabeta with moves list representation
+(Move.from_uci('e2e3'), -1.7763568394002505e-15)
+Time Elapsed: 0.077999830246
+alphabeta with moves list representation and sorted children
+(Move.from_uci('e2e3'), -1.7763568394002505e-15)
+Time Elapsed: 0.140000104904
+
+Testing minimax implementations with depth 3
+minimax with stack
+(Move.from_uci('e2e3'), 0.27500000000001457)
+Time Elapsed: 3.34399986267
+minimax with stack representation and sorted children
+(Move.from_uci('e2e3'), 0.27500000000001457)
+Time Elapsed: 6.15600013733
+alphabeta with stack representation
+(Move.from_uci('e2e3'), 0.27500000000001457)
+Time Elapsed: 0.484999895096
+alphabeta with stack representation and sorted children
+(Move.from_uci('e2e3'), 0.27500000000001457)
+Time Elapsed: 0.828000068665
+minimax with moves list representation
+(Move.from_uci('e2e3'), 0.27500000000001457)
+Time Elapsed: 5.81200003624
+minimax with moves list representation and sorted children
+(Move.from_uci('e2e3'), 0.27500000000001457)
+Time Elapsed: 8.6099998951
+alphabeta with moves list representation
+(Move.from_uci('e2e3'), 0.27500000000001457)
+Time Elapsed: 0.828000068665
+alphabeta with moves list representation and sorted children
+(Move.from_uci('e2e3'), 0.27500000000001457)
+Time Elapsed: 1.04699993134
+
+Testing minimax implementations with depth 4
+minimax with stack
+(Move.from_uci('e2e3'), -0.10000000000000231)
+Time Elapsed: 75.2039999962
+minimax with stack representation and sorted children
+(Move.from_uci('e2e3'), -0.10000000000000231)
+Time Elapsed: 135.503999949
+alphabeta with stack representation
+(Move.from_uci('e2e3'), -0.10000000000000231)
+Time Elapsed: 6.367000103
+alphabeta with stack representation and sorted children
+(Move.from_uci('e2e3'), -0.10000000000000231)
+Time Elapsed: 10.4219999313
+minimax with moves list representation
+(Move.from_uci('e2e3'), -0.10000000000000231)
+Time Elapsed: 160.830000162
+minimax with moves list representation and sorted children
+(Move.from_uci('e2e3'), -0.10000000000000231)
+Time Elapsed: 1075.523
+alphabeta with moves list representation
+(Move.from_uci('e2e3'), -0.10000000000000231)
+Time Elapsed: 7.40599989891
+alphabeta with moves list representation and sorted children
+(Move.from_uci('e2e3'), -0.10000000000000231)
+Time Elapsed: 10.3129999638
