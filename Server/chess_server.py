@@ -2,7 +2,7 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 from flask.ext.cors import CORS
-import chess, minimax, evaluator
+import chess, minimax, evaluator, sys
 
 app = Flask(__name__)
 CORS(app)
@@ -27,7 +27,7 @@ def legal_moves():
 @app.route('/calculate_move/<d>')
 def calculate_move(d):
 	d = int(d)
-	value, move = minimax.minimax_alpha_beta(game, 4, True, evaluator.evaluate_advanced)
+	move,value = minimax.alphabeta_stack(game,4,-sys.maxsize,sys.maxsize,False,evaluator.evaluate_advanced)
 	game.push(move)
 	print(game)
 	return move.uci()

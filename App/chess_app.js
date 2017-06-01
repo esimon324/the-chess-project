@@ -483,7 +483,7 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 			
 			//update new set of legal moves
 			$scope.getLegalMoves();
-		};
+            
 			$scope.pushWhiteKingsideCastle = function()
 			{
 				var moved = document.getElementById('king-e1');
@@ -497,8 +497,9 @@ var chessApp = angular.module('chessApp', []).controller('chessAppController',
 							};
 				$scope.moves.push(move);
 			};
+        };
 		
-		$scope.undoWhiteKingsideCastle = function()
+        $scope.undoWhiteKingsideCastle = function()
 		{
 			//move king back
 			var king = document.getElementById('king-e1');
